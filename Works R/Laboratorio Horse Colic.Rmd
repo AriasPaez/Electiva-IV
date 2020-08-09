@@ -1,18 +1,304 @@
 ---
-title: "R Notebook"
+title: "Laboratorio Horse Colic"
 output: html_notebook
+#Autor: Cristian Andrés Arias Páez
 ---
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+#Instalación paquetes
 
 ```{r}
-plot(cars)
+install.packages('readr')
+install.packages('dplyr')
+install.packages('ggplot2')
+install.packages('reshape')
+install.packages('naivebayes')
+install.packages('caret')
+install.packages('e1071')
+install.packages('tidyverse')
+install.packages('rpart')
+install.packages('rpart.plot')
+install.packages('tidyverse')
+install.packages('rpart')
+install.packages('rpart.plot')
+install.packages('OneR')
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+#Cargando Paquetes
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(reshape)
+library(naivebayes)
+library(caret) 
+library(e1071) 
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+library(OneR)
+```
+#CARGA DE DATASET
+```{r}
+data_set_original = read.csv("horsecolic.csv", header = TRUE, sep = ";", dec = ".")
+data_set_original
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+#CORRELACION
+```{r}
+datos = cor(data_set_original)
+datos.lista = melt(datos)
+names(datos.lista)=c("x","y","Nivel.de.correlación")
+escala = seq(0,1)
+(p <- ggplot(datos.lista, aes(x, y, fill=Nivel.de.correlación)) + geom_tile(aes(fill=Nivel.de.correlación)) + 
+scale_fill_continuous(
+low = "white", 
+high = "steelblue" ,
+breaks = escala) + 
+labs(title = "Gráfico de Correlaciones") + 
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      axis.text.y = element_text(angle = 0, vjust = 0.5, hjust = 1, margin = margin(2,2,15,2,"pt")
+),plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
+```
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+#LIMPIEZA
+#FILTRADO DE ATRIBUTOS
+```{r}
+data_set_filter = select(data_set_original,-hospital_number,-surgical_lesion,-pain)
+data_set_filter
+```
+
+
+#Valores Faltantes
+```{r}
+data_set_completing = data_set_filter
+#replace(data_set_completing,data_set_completing == '?',NA)
+
+data_set_completing$rectal_temperature[is.na(data_set_completing$rectal_temperature)] = round(mean(data_set_completing$rectal_temperature, na.rm=T))
+
+data_set_completing$pulse[is.na(data_set_completing$pulse)] = round(mean(data_set_completing$pulse, na.rm=T))
+
+data_set_completing$respiratory_rate[is.na(data_set_completing$respiratory_rate)] = round(mean(data_set_completing$respiratory_rate, na.rm=T))
+
+data_set_completing$temperature_of_extremities[is.na(data_set_completing$temperature_of_extremities)] = round(mean(data_set_completing$temperature_of_extremities, na.rm=T))
+
+data_set_completing$peripheral_pulse[is.na(data_set_completing$peripheral_pulse)] = round(mean(data_set_completing$peripheral_pulse, na.rm=T))
+
+data_set_completing$mucous_membranes[is.na(data_set_completing$mucous_membranes)] = round(mean(data_set_completing$mucous_membranes, na.rm=T))
+
+data_set_completing$capillary_refill_time[is.na(data_set_completing$capillary_refill_time)] = round(mean(data_set_completing$capillary_refill_time, na.rm=T))
+
+data_set_completing$peristalsis[is.na(data_set_completing$peristalsis)] = round(mean(data_set_completing$peristalsis, na.rm=T))
+
+data_set_completing$abdominal_distension[is.na(data_set_completing$abdominal_distension)] = round(mean(data_set_completing$abdominal_distension, na.rm=T))
+
+data_set_completing$nasogastric_tube[is.na(data_set_completing$nasogastric_tube)] = round(mean(data_set_completing$nasogastric_tube, na.rm=T))
+
+data_set_completing$nasogastric_reflux[is.na(data_set_completing$nasogastric_reflux)] = round(mean(data_set_completing$nasogastric_reflux, na.rm=T))
+
+data_set_completing$nasogastric_reflux_ph[is.na(data_set_completing$nasogastric_reflux_ph)] = round(mean(data_set_completing$nasogastric_reflux_ph, na.rm=T))
+
+data_set_completing$rectal_examination[is.na(data_set_completing$rectal_examination)] = round(mean(data_set_completing$rectal_examination, na.rm=T))
+
+data_set_completing$abdomen[is.na(data_set_completing$abdomen)] = round(mean(data_set_completing$abdomen, na.rm=T))
+
+data_set_completing$packed_cell_volume[is.na(data_set_completing$packed_cell_volume)] = round(mean(data_set_completing$packed_cell_volume, na.rm=T))
+
+data_set_completing$total_protein[is.na(data_set_completing$total_protein)] = round(mean(data_set_completing$total_protein, na.rm=T))
+
+data_set_completing$abdominocentesis_appearance[is.na(data_set_completing$abdominocentesis_appearance)] = round(mean(data_set_completing$abdominocentesis_appearance, na.rm=T))
+
+data_set_completing$abdomcentesis_total_protein[is.na(data_set_completing$abdomcentesis_total_protein)] = round(mean(data_set_completing$abdomcentesis_total_protein, na.rm=T))
+
+data_set_completing$cp_data[is.na(data_set_completing$cp_data)] = round(mean(data_set_completing$cp_data, na.rm=T))
+
+data_set_completing
+
+```
+
+#DISCRETIZACIÓN
+```{r}
+data_set_discret = data_set_completing
+
+#Discretizando rectal_temperature: Cambia valores entre [37.7,37.9] por 1, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$rectal_temperature[(
+    data_set_discret$rectal_temperature >= 37.7 &
+      data_set_discret$rectal_temperature <= 37.9)] = 0
+
+data_set_discret$rectal_temperature[(
+  (data_set_discret$rectal_temperature < 37.7 |
+    data_set_discret$rectal_temperature > 37.9
+  ) & 
+  (data_set_discret$rectal_temperature !=0))] = 1
+
+#Discretizando age: Cambia valores diferentes a 1 por 0, dejando 1 como valor que indica ADULTO. 0 como JOVEN
+data_set_discret$age[(
+    data_set_discret$age == 9)] = 0
+
+#Discretizando pulse: Cambia valores entre [20,40] por 0, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$pulse[(
+    data_set_discret$pulse >= 20 &
+      data_set_discret$pulse <= 40)] = 0
+
+data_set_discret$pulse[(
+  (data_set_discret$pulse < 20 |
+    data_set_discret$pulse > 40
+  ) & 
+  (data_set_discret$pulse !=0))] = 1
+
+#Discretizando respiratory_rate: Cambia valores entre [8,10] por 0, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$respiratory_rate[(
+    data_set_discret$respiratory_rate >= 8 &
+      data_set_discret$respiratory_rate <= 10)] = 0
+
+data_set_discret$respiratory_rate[(
+  (data_set_discret$respiratory_rate < 8 |
+    data_set_discret$respiratory_rate > 10
+  ) & 
+  (data_set_discret$respiratory_rate !=0))] = 1
+
+#Discretizando temperature_of_extremities: Cambia valores entre [2,4] por 1, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$temperature_of_extremities[(
+    data_set_discret$temperature_of_extremities == 1)] = 0
+
+data_set_discret$temperature_of_extremities[(
+  (data_set_discret$temperature_of_extremities !=0))] = 1
+ 
+#Discretizando peripheral_pulse: Cambia valores entre [1,2] por 0, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$peripheral_pulse[(
+    data_set_discret$peripheral_pulse == 1 | 
+    data_set_discret$peripheral_pulse == 2)] = 0
+
+data_set_discret$peripheral_pulse[(
+  (data_set_discret$peripheral_pulse !=0 ))] = 1
+
+#Discretizando mucous_membranes: Cambia valores entre [1,2] por 0, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$mucous_membranes[(
+    data_set_discret$mucous_membranes == 1 | 
+    data_set_discret$mucous_membranes == 2)] = 0
+
+data_set_discret$mucous_membranes[(
+  (data_set_discret$mucous_membranes !=0))] = 1
+
+#-----
+#Discretizando total_protein: Cambia valores fuera de [6,7.5] por 1, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$total_protein[(
+    data_set_discret$total_protein >= 6 &
+      data_set_discret$total_protein <= 7.5)] = 0
+
+data_set_discret$total_protein[(
+  (data_set_discret$total_protein !=0))] = 1
+
+#Discretizando abdominocentesis_appearance: Cambia ?,3 y 2 por 1, dejando 1 como valor que indica mala salud. 0 como normal
+data_set_discret$abdominocentesis_appearance[(
+    data_set_discret$abdominocentesis_appearance == 1)] = 0
+
+data_set_discret$abdominocentesis_appearance[(
+    data_set_discret$abdominocentesis_appearance != 0)] = 1
+
+#Discretizando outcome: Cambia ?,3 y 2 por 1, dejando 1 como valor que indica muerto, y 0 como vivo
+data_set_discret$outcome[(
+    data_set_discret$outcome == 1)] = 0
+
+data_set_discret$outcome[(
+    data_set_discret$outcome != 0 |
+     is.na(data_set_discret$outcome) )] = 1
+
+#car$carro[car$Color == "red"] <- 1
+data_set_discret
+```
+#CORRELACION
+```{r}
+datos = cor(data_set_discret)
+datos.lista = melt(datos)
+names(datos.lista)=c("x","y","Nivel.de.correlación")
+escala = seq(0,1)
+(p <- ggplot(datos.lista, aes(x, y, fill=Nivel.de.correlación)) + geom_tile(aes(fill=Nivel.de.correlación)) + 
+scale_fill_continuous(
+low = "white", 
+high = "steelblue" ,
+breaks = escala) + 
+labs(title = "Gráfico de Correlaciones") + 
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      axis.text.y = element_text(angle = 0, vjust = 0.5, hjust = 1, margin = margin(2,2,15,2,"pt")
+),plot.title = element_text(face = "bold", size = 14, hjust = 0.5)))
+```
+
+#SPLIT
+```{r}
+
+data_set_clean = data_set_discret
+
+data_set_clean$outcome[(
+    data_set_clean$outcome == 0)] = "no"
+data_set_clean$outcome[(
+    data_set_clean$outcome == 1)] = "si"
+
+data_set_clean
+
+train_set = sample_frac(data_set_clean, .7)
+test_set = setdiff(data_set_clean, train_set)
+
+print(paste("Cantidad de registros conjunto de Datos Original: ",nrow(data_set_original)))
+print(paste("Cantidad de registros Conjunto de entrenamiento: ",nrow(train_set)))
+print(paste("Cantidad de registros Conjunto de Pruebas: ",nrow(test_set)))
+```
+```{r}
+train_set
+```
+
+```{r}
+test_set
+```
+
+#----------------------------------------------------------------------------
+#NAIVE BAYES
+```{r}
+
+modelo_naive_bayes <- naive_bayes(outcome ~ .,  data = train_set)
+#plot(modelo_naive_bayes)
+#print(modelo_naive_bayes)
+```
+
+#Probando modelo
+
+```{r}
+testing_model_naive_bayes <- predict(modelo_naive_bayes, test_set)
+```
+#Matriz de Confusion
+
+```{r}
+tab <- table(test_set$outcome, testing_model_naive_bayes, dnn = c("Original", "Prediccion"))
+confusionMatrix(tab)
+```
+#----------------------------------------------------------------------------
+
+
+
+#ARBOLES DE DECISION
+```{r}
+model_tree_decition <- rpart(outcome ~ ., data = train_set)
+rpart.plot(model_tree_decition, main = "Arbol de Decisión")
+```
+#Prediccion
+
+```{r}
+testing_model_tree_decition <- predict(model_tree_decition, newdata = test_set, type = 'class')
+tab <- table(test_set$outcome, testing_model_tree_decition)
+confusionMatrix(tab)
+```
+
+#One R
+
+```{r}
+model_one_r <- OneR(outcome~., data = train_set, verbose = TRUE)
+```
+```{r}
+#plot(model_one_r)
+testing_model_one_r <- predict(model_one_r, test_set, type = "class")
+tab <- table(test_set$outcome, testing_model_one_r)
+confusionMatrix(tab)
+```
+
+
+
+
