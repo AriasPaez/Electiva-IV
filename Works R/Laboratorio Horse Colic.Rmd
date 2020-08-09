@@ -38,7 +38,7 @@ library(OneR)
 ```
 #CARGA DE DATASET
 ```{r}
-data_set_original = read.csv("horsecolic.csv", header = TRUE, sep = ";", dec = ".")
+data_set_original = read.csv("https://raw.githubusercontent.com/AriasPaez/Electiva-IV/master/Datasets/horsecolic.csv", header = TRUE, sep = ";", dec = ".")
 data_set_original
 ```
 
